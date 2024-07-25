@@ -10,7 +10,8 @@ class SevenStateMDP():
         self.rewards = [0 for _ in range(6)]
         self.rewards.append(1)
         self.terminal_states = [0, 6]
-        self.state_vals = [0 for _ in range(7)]
+        self.state_vals = [0 for _ in range(6)]
+        self.state_vals.append(1)
     
     def transition(self, curr_state, action) -> int:
         '''
@@ -47,7 +48,7 @@ class SevenStateMDP():
             # trajectory.append(action)
             # trajectory.append(curr_reward)
             if save_trajectory: trajectory.append(next_state)
-        print(trajectory)
+        # print(trajectory)
 
         return reward
     
@@ -56,10 +57,19 @@ class SevenStateMDP():
         Each state is simulated for num_episodes and the average returns are saved in self.state_vals
         """
         for state in range(7):
+            total_reward = 0
             for i in range(num_episodes):
                 reward = self.generate_episode(state, False, 1)
+                total_reward += reward
+            self.state_vals[state] = total_reward / num_episodes
 
         
 
 mdp = SevenStateMDP()
-print(mdp.generate_episode(3, True, 0.9))
+
+with open("state_value_changes.csv", "w") as f:
+    for i in range(1,1000):  # inefficient but only for visualisation purposes
+        mdp.first_visit_mc_eval(i)
+        values = [str(x) for x in mdp.state_vals[1:-1]]
+        f.write(",".join(values) + "\n")
+    
