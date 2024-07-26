@@ -52,24 +52,21 @@ class SevenStateMDP():
 
         return reward
     
-    def first_visit_mc_eval(self, num_episodes):
+    def first_visit_mc_eval(self, num_episodes, alpha):
         """
-        Each state is simulated for num_episodes and the average returns are saved in self.state_vals
+        Simulate multiple episodes and perform state value updates over each episode
+        Uses constant-alpha updates
         """
-        for state in range(7):
-            total_reward = 0
-            for i in range(num_episodes):
-                reward = self.generate_episode(state, False, 1)
-                total_reward += reward
-            self.state_vals[state] = total_reward / num_episodes
+        for i in range(num_episodes):
+            for state in range(1,6):
+                curr_return = self.generate_episode(state, False, 1)
+                self.state_vals[state] += alpha * (curr_return - self.state_vals[state])
+            
+            if i % 10 == 0: print(self.state_vals)
 
         
 
 mdp = SevenStateMDP()
 
-with open("state_value_changes.csv", "w") as f:
-    for i in range(1,1000):  # inefficient but only for visualisation purposes
-        mdp.first_visit_mc_eval(i)
-        values = [str(x) for x in mdp.state_vals[1:-1]]
-        f.write(",".join(values) + "\n")
+mdp.first_visit_mc_eval(120, 0.03)
     
