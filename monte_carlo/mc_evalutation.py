@@ -16,11 +16,11 @@ class SevenStateMDP():
     def transition(self, curr_state, action) -> int:
         '''
         Returns the next state given some internal transition model
-        Given an action, 25% chance to fail and stay or move opposite direction
+        Given an action, 50% chance to fail and stay or move opposite direction
         '''
-        seed = random.randint(1, 4)
+        seed = random.random()
         
-        if seed == 1:
+        if seed < 0.5:
             return random.choice([curr_state, curr_state-action])
         
         return curr_state + action
@@ -62,11 +62,11 @@ class SevenStateMDP():
                 curr_return = self.generate_episode(state, False, 1)
                 self.state_vals[state] += alpha * (curr_return - self.state_vals[state])
             
-            if i % 10 == 0: print(self.state_vals)
+            if i % 1000 == 0: print(self.state_vals)
 
         
 
 mdp = SevenStateMDP()
 
-mdp.first_visit_mc_eval(120, 0.03)
+mdp.first_visit_mc_eval(10000, 0.001)
     

@@ -1,0 +1,80 @@
+import random
+import numpy as np
+
+"""
+Modelling Monte Carlo Methods for policy evaluation and policy improvement.
+On-policy evaluation with a hidden transition model to create a model-free agent.
+"""
+
+def convert_trajectory(trajectory: list[int]) -> list[tuple[int, int, int]]:
+    '''
+    Converts trajectory into list of tuples
+    '''
+    result = []
+    for i in range(0, len(trajectory)-2, 3):
+        result.append((trajectory[i], trajectory[i+1], trajectory[i+2]))
+        
+    return result
+
+class SevenStateMDP():
+    def __init__(self) -> None:
+        self.rewards = [0 for _ in range(6)]
+        self.rewards.append(1)
+        self.terminal_states = [0, 6]
+        # self.state_vals = [0 for _ in range(6)]
+        # self.state_vals.append(1)
+        self.state_action_values = np.array([[0.5, 0.5] for _ in range(5)])  # q function of the mdp
+    
+    def transition(self, curr_state, action) -> tuple[int, int]:
+        '''
+        Returns the reward and next state for some state action pair
+        '''
+        next_state = curr_state + action
+        return self.rewards[next_state], next_state
+    
+    def generate_episode(self, starting_state, epsilon:float) -> list[int]:
+        '''
+        Simulates an entire episode, up to num_episodes
+        Returns the discounted return starting from starting_state
+        Uses an e-greedy policy
+        '''
+        next_state = starting_state   
+
+        trajectory = [starting_state]
+        while next_state not in self.terminal_states:
+            # e-greedy policy
+            if random.random() < epsilon:
+                action = random.choice([0, 1])
+            else:
+                action = np.argmax(self.state_action_values[next_state-1])  # select actions according to the argmax of the q function, substract one because there are 2 terminal states
+            move = -1 if action == 0 else 1  # first action is go down, second is go up
+            curr_reward, next_state = self.transition(next_state, move)
+            trajectory.append(action)
+            trajectory.append(curr_reward)            
+            trajectory.append(next_state)
+            
+        return trajectory
+    
+    def first_visit_mc_eval(self, num_episodes, alpha):
+        """
+        Simulate multiple episodes and perform q value updates over each episode
+        Uses constant-alpha updates
+        Discount factor = 1
+        """
+        for m in range(num_episodes):
+            seen = set()
+            traj = self.generate_episode(random.randint(1, 5), True)  # randomly pick valid starting point and simulate episode
+            grouped = convert_trajectory(traj)
+            for state, action, reward in grouped:
+                if state not in seen:
+                    seen.add(state)
+                    self.state_action_values[state-1][action] += alpha * (traj[-2] - self.state_action_values[state-1][action])  # assumes the return is the last reward, can accumulate if necessary
+
+            # if m % 1000 == 0: 
+            #     print(self.state_action_values, end="\n\n")
+        
+
+mdp = SevenStateMDP()
+
+mdp.first_visit_mc_eval(12000, 0.01)
+print(np.round(mdp.state_action_values, decimals=3))
